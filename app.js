@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express'
 import cors from 'cors'
 import mongoose from 'mongoose';
@@ -9,6 +10,9 @@ import { validatePassword } from './Validations/Signup_Validation';
 import { validateConfirmPassword } from './Validations/Signup_Validation';
 import { validateSignUp } from './Validations/Signup_Validation';
 import { matchPassword } from './Validations/Login_Validation';
+import os from 'os'
+import fs from 'fs'
+const Filename = 'logs.txt'
 
 
 const app = express();
@@ -66,8 +70,8 @@ app.post('/SignUp', async(req,res)=>{
   return res.status(201).json({ message: 'SignUp successful.', user: publicUser(SignUp) });
 }
 );
-app.post('/Login', (req,res)=>{
-  const { username , password } = req.body;
+app.post('/Login', async(req,res)=>{
+  const { username , password } = await req.body;
   if (!username || !password) {
     return res.status(400).json({ message: 'username and password are required.' });
   }
@@ -78,3 +82,26 @@ app.post('/Login', (req,res)=>{
   return res.json({ message: 'Login successful.', user: publicUser(user) });
 }
 );
+app.get('/health', async(req,res) =>{
+   const Uptime = OS.uptime();
+   const Type = OS.type();
+   const FreeMemory = OS.freemem();
+   res.statusCode = 200;
+   res.end(`{UPTIME : ${Uptime}, TYPE : ${Type} , FREE MEMORY : ${(FreeMemory/ 1024 ** 3).toFixed(4)}GB}`);
+})
+app.use('/', async(req,res) =>{
+  try{
+    await fs.writeFile(Filename, `URL:${req.ogrinalUrl}`)
+  }catch(error){
+    return res.status(402).json({error:"failed to create a file."})
+  }
+})
+app.get('/logs', async(req,res) =>{
+  try{
+    const logData = await fs.readFile(Filename, 'utf-8');
+    return res.send(logData);
+  }catch(error){
+    return res.status(404).json({error:"file does not exist."})
+
+  }
+})
